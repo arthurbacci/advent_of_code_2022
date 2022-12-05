@@ -1,6 +1,5 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-use std::iter;
 
 fn to_priority(s: u8) -> u8 {
     match s {
