@@ -1,124 +1,71 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-
+use std::collections::HashSet;
 
 pub fn main() {
-    let f = File::open("src/day8.txt").unwrap();
+    let f = File::open("src/day9.txt").unwrap();
     let reader = BufReader::new(f);
 
-    let mut trees = Vec::new();
-
-    let lines = reader.lines().map(|x| x.unwrap());
-    for ln in lines {
-        if ln.is_empty() {return}
-
-        let mut to_add = Vec::new();
-        for i in ln.bytes() {
-            to_add.push(i - b'0');
-        }
-        trees.push(to_add);
-    }
-
-
-    let mut from_right = trees.clone();
-    for y in 0..from_right.len() {
-        let mut max = 0;
-        for x in (0..from_right[y].len()).rev() {
-            if from_right[y][x] > max {
-                max = from_right[y][x];
-            } else {
-                from_right[y][x] = max;
-            }
-        }
-    }
-
-    let mut from_down = trees.clone();
-    for x in 0..from_down[0].len() {
-        let mut max = 0;
-        for y in (0..from_down.len()).rev() {
-            if from_down[y][x] > max {
-                max = from_down[y][x];
-            } else {
-                from_down[y][x] = max;
-            }
-        }
-    }
+    let mut h_pos = (0i32, 0i32);
+    let mut t_pos = (0i32, 0i32);
+    let mut t_history = HashSet::new();
+    t_history.insert(t_pos);
     
+    let mut lines = reader.lines();
+    let mut acc = 0u32;
+    let mut dir = '_';
+    loop {
+        if acc == 0 {
+            let ln = match lines.next() {
+                Some(ln) => ln,
+                None => break,
+            }.unwrap();
+            let ln: Vec<&str> = ln.split(' ').collect();
+            if ln.len() != 2 {return}
+            
+            dir = ln[0].chars().next().unwrap();
+            acc = ln[1].parse().unwrap();
+        }
+        acc -= 1;
+        
+        match dir {
+            'U' => h_pos.1 -= 1,
+            'D' => h_pos.1 += 1,
+            'L' => h_pos.0 -= 1,
+            'R' => h_pos.0 += 1,
+            c => panic!("Invalid character {c:?}"),
+        }
 
-    let mut total = 0;
-    total += 2 * trees.len() + 2 * trees[0].len() - 4;
-    let mut total2 = 0;
-
-    let mut max_from_up = trees[0].clone();
-    for row in 1..(trees.len() - 1) {
-        let mut max_from_left = trees[row][0];
-        for col in 1..(trees[row].len() - 1) {
-            let cur = trees[row][col];
-    
-            if cur > max_from_up[col] || cur > max_from_left
-                || cur > from_down[row + 1][col]
-                || cur > from_right[row][col + 1]
-            {
-                total += 1;
+        if (t_pos.1 - h_pos.1).abs() > 1 || (t_pos.0 - h_pos.0).abs() > 1 {
+            if t_pos.1 != h_pos.1  {
+                t_pos.1 += if h_pos.1 > t_pos.1 {1} else {-1};
             }
-
-            let scsc = scenic_score(&trees, col, row);
-            if scsc > total2 {
-                total2 = scsc;
-            }
-
-            if cur > max_from_up[col] {
-                max_from_up[col] = cur;
-            }
-            if cur > max_from_left {
-                max_from_left = cur;
+            if t_pos.0 != h_pos.0 {
+                t_pos.0 += if h_pos.0 > t_pos.0 {1} else {-1};
             }
         }
+
+        t_history.insert(t_pos);
+
+
+        for y in -6..6 {
+            for x in -6..6 {
+                if (x, y) == h_pos {
+                    print!("H");
+                } else if (x, y) == t_pos {
+                    print!("T");
+                } else if (x, y) == (0, 0) {
+                    print!("s");
+                } else {
+                    print!(".");
+                }
+            }
+            println!();
+        }
+        println!();
     }
 
-    println!("{total} {total2}");
+    println!("{}", t_history.len());
 }
 
-fn scenic_score(trees: &Vec<Vec<u8>>, col: usize, row: usize) -> u64 {
-    let cur = trees[row][col];
-
-    let mut up = 0;
-    let (x, mut y) = (col, row);
-    loop {
-        if y == 0 {break}
-        y -= 1;
-        up += 1;
-        if trees[y][x] >= cur {break}
-    }
-
-    let mut left = 0;
-    let (mut x, y) = (col, row);
-    loop {
-        if x == 0 {break}
-        x -= 1;
-        left += 1;
-        if trees[y][x] >= cur {break}
-    }
-
-    let mut down = 0;
-    let (x, mut y) = (col, row);
-    loop {
-        y += 1;
-        if y == trees.len() {break}
-        down += 1;
-        if trees[y][x] >= cur {break}
-    }
-
-    let mut right = 0;
-    let (mut x, y) = (col, row);
-    loop {
-        x += 1;
-        if x == trees[0].len() {break}
-        right += 1;
-        if trees[y][x] >= cur {break}
-    }
-
-
-    up * left * down * right
-}
 
