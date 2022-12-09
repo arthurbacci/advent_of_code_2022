@@ -1,58 +1,75 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-use std::collections::HashMap;
 
-fn add_sz(size_map: &mut HashMap<Vec<String>, u64>, key: &[String], add: u64) {
-    if let Some(x) = size_map.get_mut(key) {
-        *x += add;
-    } else {
-        size_map.insert(key.to_vec(), add);
-    }
-}
 
 pub fn main() {
-    let f = File::open("src/day7.txt").unwrap();
+    let f = File::open("src/day8.txt").unwrap();
     let reader = BufReader::new(f);
 
+    let mut trees = Vec::new();
+
     let lines = reader.lines().map(|x| x.unwrap());
-    let mut path = vec!["/".to_string()];
-    let mut size_map = HashMap::new();
-
     for ln in lines {
-        let ln: Vec<_> = ln.split(' ').collect();
-        if ln.is_empty() {continue}
+        if ln.is_empty() {return}
 
-        
-        if ln[0] == "$" {
-            if ln[1] == "cd" {
-                match ln[2] {
-                    ".." => {path.pop();}
-                    "/" => path.truncate(1),
-                    s => path.push(s.to_string()),
-                }
-            }
-        } else {
-            if let Ok(x) = ln[0].parse::<u64>() {
-                for i in 1..=path.len() {
-                    add_sz(&mut size_map, &path[0..i], x);
-                }
+        let mut to_add = Vec::new();
+        for i in ln.bytes() {
+            to_add.push(i - b'0');
+        }
+        trees.push(to_add);
+    }
+
+
+    let mut from_right = trees.clone();
+    for y in 0..from_right.len() {
+        let mut max = 0;
+        for x in (0..from_right[y].len()).rev() {
+            if from_right[y][x] > max {
+                max = from_right[y][x];
+            } else {
+                from_right[y][x] = max;
             }
         }
     }
 
-    let need_to_free = size_map.get(&vec!["/".to_string()]).unwrap() - 40000000;
+    let mut from_down = trees.clone();
+    for x in 0..from_down[0].len() {
+        let mut max = 0;
+        for y in (0..from_down.len()).rev() {
+            if from_down[y][x] > max {
+                max = from_down[y][x];
+            } else {
+                from_down[y][x] = max;
+            }
+        }
+    }
+    
 
     let mut total = 0;
-    let mut less_enough = u64::MAX;
-    for (_, v) in size_map {
-        if v >= need_to_free && v < less_enough {
-            less_enough = v;
-        }
+    total += 2 * trees.len() + 2 * trees[0].len() - 4;
 
-        if v <= 100000 {
-            total += v;
+    let mut max_from_up = trees[0].clone();
+    for row in 1..(trees.len() - 1) {
+        let mut max_from_left = trees[row][0];
+        for col in 1..(trees[row].len() - 1) {
+            let cur = trees[row][col];
+    
+            if cur > max_from_up[col] || cur > max_from_left
+                || cur > from_down[row + 1][col]
+                || cur > from_right[row][col + 1]
+            {
+                total += 1;
+            }
+
+            if cur > max_from_up[col] {
+                max_from_up[col] = cur;
+            }
+            if cur > max_from_left {
+                max_from_left = cur;
+            }
         }
     }
-    println!("{total} {less_enough}");
+
+    println!("{total}");
 }
 
