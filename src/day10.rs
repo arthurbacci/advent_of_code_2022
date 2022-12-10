@@ -1,6 +1,8 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 
+pub mod spinoff;
+
 struct Machine {
     x: i64,
     c: u64,
