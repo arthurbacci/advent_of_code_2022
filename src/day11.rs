@@ -67,12 +67,14 @@ impl Monkey {
         ))
     }
 
-    fn round(&mut self) -> Vec<(usize, u64)> {
+    fn round(&mut self, divide: bool) -> Vec<(usize, u64)> {
         let mut ret = Vec::new();
 
         while let Some(mut item) = self.items.pop_front() {
             item = (self.operation)(item);
-            item /= 3;
+            if divide {
+                item /= 3;
+            }
             
             ret.push((
                 if item % self.divisible_by == 0 {
@@ -88,7 +90,7 @@ impl Monkey {
     }
 }
 
-pub fn main() {
+fn both_parts(part2: bool) {
     let file = File::open("src/day11.txt").unwrap();
     let reader = BufReader::new(file);
     let mut lines = reader.lines()
@@ -105,13 +107,19 @@ pub fn main() {
         lines.next().unwrap();
     }
 
+    let mut value_divided = 1;
+    for monkey in &monkeys {
+        value_divided *= monkey.divisible_by;
+        println!("{} {}", monkey.divisible_by, value_divided);
+    }
+
     let mut totals = vec![0; monkeys.len()];
-    for _ in 0..20 {
+    for _ in 0..(if part2 {10000} else {20}) {
         for i in 0..monkeys.len() {
-            let to_adds = monkeys[i].round();
+            let to_adds = monkeys[i].round(!part2);
             totals[i] += to_adds.len();
             for (i, el) in to_adds {
-                monkeys[i].items.push_back(el);
+                monkeys[i].items.push_back(el % value_divided);
             }
         }
     }
@@ -126,5 +134,10 @@ pub fn main() {
     }
 
     println!("{}", maximums.0 * maximums.1);
+}
+
+pub fn main() {
+    both_parts(false);
+    both_parts(true);
 }
 
