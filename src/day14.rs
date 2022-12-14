@@ -19,26 +19,13 @@ fn direction_to(a: (i64, i64), b: (i64, i64)) -> (i64, i64) {
     )
 }
 
-fn print_sand(rocks: &HashSet<(i64, i64)>) {
-    for y in 0..=10 {
-        for x in 490..=505 {
-            if rocks.get(&(x, y)).is_some() {
-                print!("#");
-            } else {
-                print!(".");
-            }
-        }
-        println!();
-    }
-    println!();
-}
-
 pub fn main() {
     let f = File::open("src/day14.txt").unwrap();
     let reader = BufReader::new(f);
 
     let mut rocks = HashSet::new();
-    let mut minimums = HashMap::new();
+    let mut maximums = HashMap::new();
+    let mut maximum = i64::MIN;
 
     for ln in reader.lines().map(|x| x.unwrap()) {
         if ln.is_empty() {break}
@@ -52,14 +39,17 @@ pub fn main() {
         for i in positions {
             let dir = direction_to(pos, i);
             loop {
-                match minimums.get(&pos.0) {
+                match maximums.get(&pos.0) {
                     None => {
-                        minimums.insert(pos.0, pos.1);
+                        maximums.insert(pos.0, pos.1);
                     }
                     Some(&x) if pos.1 > x => {
-                        minimums.insert(pos.0, pos.1);
+                        maximums.insert(pos.0, pos.1);
                     }
                     _ => {}
+                }
+                if pos.1 > maximum {
+                    maximum = pos.1;
                 }
                 rocks.insert((pos.0, pos.1));
                 
@@ -71,11 +61,13 @@ pub fn main() {
         }
     }
 
+    let old_rocks = rocks.clone();
+
     /* SAND~SIMULATION */
     'outer: for i in 0.. {
         let mut pos = (500, 0);
 
-        while pos.1 <= *minimums.get(&pos.0).unwrap_or(&i64::MIN) {
+        while pos.1 <= *maximums.get(&pos.0).unwrap_or(&i64::MIN) {
             let down = (pos.0, pos.1 + 1);
             let left = (pos.0 - 1, pos.1 + 1);
             let right = (pos.0 + 1, pos.1 + 1);
@@ -88,16 +80,47 @@ pub fn main() {
                 pos = right;
             } else {
                 rocks.insert((pos.0, pos.1));
-                match minimums.get(&pos.0) {
+                match maximums.get(&pos.0) {
                     None => {
-                        minimums.insert(pos.0, pos.1);
+                        maximums.insert(pos.0, pos.1);
                     }
                     Some(&x) if pos.1 > x => {
-                        minimums.insert(pos.0, pos.1);
+                        maximums.insert(pos.0, pos.1);
                     }
                     _ => {}
                 }
-                print_sand(&rocks);
+                continue 'outer;
+            }
+        }
+        
+        println!("{i}");
+        break;
+    }
+
+    let mut rocks = old_rocks;
+
+    /* PART~TWO */
+    'outer: for i in 1.. {
+        let mut pos = (500, 0);
+
+        loop {
+            let down = (pos.0, pos.1 + 1);
+            let left = (pos.0 - 1, pos.1 + 1);
+            let right = (pos.0 + 1, pos.1 + 1);
+
+            let blocked = pos.1 == maximum + 1;
+
+            if !blocked && rocks.get(&down).is_none() {
+                pos = down;
+            } else if !blocked && rocks.get(&left).is_none() {
+                pos = left;
+            } else if !blocked && rocks.get(&right).is_none() {
+                pos = right;
+            } else {
+                rocks.insert((pos.0, pos.1));
+
+                if pos == (500, 0) {break}
+
                 continue 'outer;
             }
         }
