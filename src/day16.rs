@@ -1,0 +1,67 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::collections::{HashMap, HashSet};
+
+/*
+ * To solve day 16, I must make sure that I never open any of the pipes more
+ * than 1 time
+ */
+
+fn consume<'a>(to_consume: &str, to_be_consumed: &'a str) -> Option<((), &'a str)> {
+    to_be_consumed.strip_prefix(to_consume).map(|x| ((), x))
+}
+
+fn consume_char(to_be_consumed: &str) -> Option<(char, &str)> {
+    let mut i = to_be_consumed.char_indices();
+    let (_, c) = i.next()?;
+    let index = i.next()?.0;
+    Some((c, &to_be_consumed[index..]))
+}
+
+fn consume_num(to_be_consumed: &str) -> Option<(u64, &str)> {
+    let mut index = to_be_consumed.len();
+    for (i, c) in to_be_consumed.char_indices() {
+        if !c.is_numeric() {
+            index = i;
+            break;
+        }
+    }
+    if index == 0 {
+        None
+    } else {
+        Some((
+            to_be_consumed[0..index].parse().unwrap(),
+            &to_be_consumed[index..],
+        ))
+    }
+}
+
+pub fn main() {
+    let f = File::open("src/day16.txt").unwrap();
+    let reader = BufReader::new(f);
+
+    let mut valves = HashMap::new();
+
+    for ln in reader.lines().map(|x| x.unwrap()) {
+        if ln.is_empty() {break}
+
+        let (_, ln) = consume("Valve ", &ln).unwrap();
+        let (c1, ln) = consume_char(&ln).unwrap();
+        let (c2, ln) = consume_char(&ln).unwrap();
+        let valve: String = [c1, c2].into_iter().collect();
+        let (_, ln) = consume(" has flow rate=", &ln).unwrap();
+        let (rate, ln) = consume_num(&ln).unwrap();
+        let (_, ln) = consume("; tunnel", &ln).unwrap();
+        let (_, ln) = consume("s", &ln).unwrap_or(((), ln));
+        let (_, ln) = consume(" lead", &ln).unwrap();
+        let (_, ln) = consume("s", &ln).unwrap_or(((), ln));
+        let (_, ln) = consume(" to valve", &ln).unwrap();
+        let (_, ln) = consume("s", &ln).unwrap_or(((), ln));
+        let (_, ln) = consume(" ", &ln).unwrap();
+
+        let leads: Vec<_> = ln.split(", ").map(|x| x.to_string()).collect();
+
+        valves.insert(valve, (rate, leads));
+    }
+}
+
