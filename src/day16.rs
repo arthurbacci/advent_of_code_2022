@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /*
  * To solve day 16, I must make sure that I never open any of the pipes more
