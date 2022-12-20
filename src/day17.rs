@@ -1,9 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::collections::HashSet;
-
-// I need to store the maximums of each column and remove all the elements
-// which are below the minimum of the maximums
+use std::collections::VecDeque;
+use std::ops::{Index, IndexMut};
 
 // This approach didn't seem to work, now I will try to keep a list for each
 // column w/ a list of the N last and I will be pop-back-ing it (VecDeque) when
@@ -64,13 +62,62 @@ impl Rock {
         }
     }
 
-    fn collides(&self, grid: &HashSet<(usize, usize)>) -> bool {
-        for i in self.pieces() {
-            if grid.get(&i).is_some() {
+    fn collides(&self, grid: &Grid) -> bool {
+        for (x, y) in self.pieces() {
+            if grid[y][x] {
                 return true;
             }
         }
         false
+    }
+}
+
+struct Grid {
+    v: VecDeque<[bool; 7]>,
+    o: usize,
+}
+
+impl Grid {
+    fn trim(&mut self) {
+        while !self.v.is_empty() && self.v[0] == [true; 7] {
+            self.v.pop_front();
+        }
+    }
+}
+
+impl Index<usize> for Grid {
+    type Output = [bool; 7];
+    fn index(&self, i: usize) -> &Self::Output {
+        if i < self.o {
+            &[true; 7]
+        } else if i < self.v.len() + self.o {
+            &self.v[i - self.o]
+        } else {
+            &[false; 7]
+        }
+    }
+}
+impl IndexMut<usize> for Grid {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        if i < self.o {
+            panic!("Attemped to change the past, action universally acknowledged to be impossible")
+        } else if i < self.v.len() + self.o {
+            &mut self.v[i - self.o]
+        } else {
+            while i >= self.v.len() + self.o {
+                self.v.push_back([false; 7]);
+            }
+            &mut self.v[i - self.o]
+        }
+    }
+}
+
+impl Grid {
+    fn new() -> Grid {
+        Grid {
+            v: VecDeque::new(),
+            o: 0,
+        }
     }
 }
 
@@ -95,10 +142,10 @@ pub fn main() {
         }).cycle();
 
     let mut max = 0;
-    let mut maxes = [0; 7];
-    let mut grid = HashSet::new();
 
-    for _ in 0 as usize..1_000_000 {
+    let mut grid = Grid::new();
+
+    for loop_count in 0 as usize..10_000_000 {
         let mut rock = Rock::new((2, max + 1), *rocks.next().unwrap());
 
         for _ in 0..3 {
@@ -134,22 +181,13 @@ pub fn main() {
         }
 
         max = max.max(rock.top());
-        for i in rock.pieces() {
-            grid.insert(i);
-            if i.1 > maxes[i.0] {
-                maxes[i.0] = i.1;
-            }
+        for (x, y) in rock.pieces() {
+            grid[y][x] = true;
         }
         
-        let min_max = maxes.iter().min().unwrap();
-
-        let mut newgrid = HashSet::new();
-        for i in grid.drain() {
-            if i.1 + 10 >= *min_max {
-                newgrid.insert(i);
-            }
+        if loop_count % 1000 == 0 {
+            grid.trim();
         }
-        grid = newgrid;
     }
 
     println!("R: {max}");
