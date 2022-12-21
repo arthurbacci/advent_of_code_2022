@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter;
 
 /*
  * To solve day 16, I must make sure that I never open any of the pipes more
@@ -36,6 +37,32 @@ fn consume_num(to_be_consumed: &str) -> Option<(u64, &str)> {
     }
 }
 
+type Id = [char; 2];
+
+#[derive(Debug)]
+struct Score {
+    terms: HashMap<Id, u64>,
+}
+
+impl Score {
+    fn new(i: impl IntoIterator<Item=(Id, u64)>) -> Self {
+        Self {
+            terms: HashMap::from_iter(i),
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Choice {
+    scores: Vec<Score>,
+}
+
+impl Choice {
+    fn new(scores: Vec<Score>) -> Self {
+        Self {scores}
+    }
+}
+
 pub fn main() {
     let f = File::open("src/day16.txt").unwrap();
     let reader = BufReader::new(f);
@@ -48,7 +75,7 @@ pub fn main() {
         let (_, ln) = consume("Valve ", &ln).unwrap();
         let (c1, ln) = consume_char(&ln).unwrap();
         let (c2, ln) = consume_char(&ln).unwrap();
-        let valve: String = [c1, c2].into_iter().collect();
+        let valve: Id = [c1, c2];
         let (_, ln) = consume(" has flow rate=", &ln).unwrap();
         let (rate, ln) = consume_num(&ln).unwrap();
         let (_, ln) = consume("; tunnel", &ln).unwrap();
@@ -62,6 +89,20 @@ pub fn main() {
         let leads: Vec<_> = ln.split(", ").map(|x| x.to_string()).collect();
 
         valves.insert(valve, (rate, leads));
+    }
+    
+    let mut choices = Vec::new();
+    for (k, v) in valves {
+        choices.push((
+                k,
+                Choice::new(vec![Score::new(iter::once((k, 1)))])
+        ));
+    }
+
+    println!("{choices:#?}");
+
+    for i in 2..=3 {
+        
     }
 }
 

@@ -145,7 +145,7 @@ pub fn main() {
 
     let mut grid = Grid::new();
 
-    for loop_count in 0 as usize..10_000_000 {
+    for loop_count in 0 as usize..2022 {
         let mut rock = Rock::new((2, max + 1), *rocks.next().unwrap());
 
         for _ in 0..3 {
@@ -156,7 +156,7 @@ pub fn main() {
             }
         }
         
-        'outer: loop {
+        'outer: for _ in 0.. {
             match pattern.next().unwrap() {
                 '<' => if rock.left() > 0 {
                     rock.p.0 -= 1;
