@@ -39,7 +39,7 @@ fn consume_num(to_be_consumed: &str) -> Option<(u64, &str)> {
 
 type Id = [char; 2];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Score {
     terms: HashMap<Id, u64>,
 }
@@ -86,23 +86,54 @@ pub fn main() {
         let (_, ln) = consume("s", &ln).unwrap_or(((), ln));
         let (_, ln) = consume(" ", &ln).unwrap();
 
-        let leads: Vec<_> = ln.split(", ").map(|x| x.to_string()).collect();
+        let leads: Vec<_> = ln.split(", ")
+            .map(|x| if x.len() == 2 {
+                let mut chars = x.chars();
+                [chars.next().unwrap(), chars.next().unwrap()]
+            } else {
+                panic!("Wrong length for leads")
+            }).collect();
 
         valves.insert(valve, (rate, leads));
     }
     
-    let mut choices = Vec::new();
-    for (k, v) in valves {
-        choices.push((
-                k,
-                Choice::new(vec![Score::new(iter::once((k, 1)))])
-        ));
+    let mut choices0 = HashMap::new();
+    for (&k, _) in &valves {
+        choices0.insert(
+            k,
+            vec![Choice::new(vec![Score::new(iter::once((k, 1)))])]
+        );
     }
 
-    println!("{choices:#?}");
+    // I need to keep two of the last choices, otherwise I won't be able to
+    // calculate the case where they valve is open
 
-    for i in 2..=3 {
+
+    let mut choices1 = HashMap::new();
+    for (&k, (_, leads)) in &valves {
+        let mut choices = Vec::new();
+        for i in leads.iter().cloned().chain(iter::once(k)) {
+            choices.push(Score::new([(i, 1)]));
+        }
+        choices1.insert(k, Choice::new(choices));
+    }
+
+    for _ in 4..=4 {
+        let mut newchoices = HashMap::new();
         
+
+        for (&k, (_, leads)) in &valves {
+            let mut choices = Vec::new();
+            for i in leads {
+                for j in &choices1.get(i).unwrap().scores {
+                    choices.push(j.clone());
+                }
+            }
+            // TODO: when opening too
+            newchoices.insert(k, Choice::new(choices));
+        }
+
+        println!("{newchoices:#?}");
     }
 }
 
